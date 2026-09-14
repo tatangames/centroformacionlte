@@ -4,7 +4,7 @@
 @include('backend.urlglobal')
 
 <head>
-    <title>Ingenieria</title>
+    <title>Centro Formación</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="{{ asset('css/login/bootstrap.min.css') }}">
@@ -117,7 +117,7 @@
 
 
                         <!-- TÍTULO  -->
-                        <h4 class="login-title">INGENIERIA Y ARQUITECTURA</h4>
+                        <h4 class="login-title">CENTRO DE FORMACIÓN</h4>
                         <form class="login-form">
                             <div>
                                 <label class="font-500">Usuario</label>
