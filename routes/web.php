@@ -260,8 +260,9 @@ Route::middleware('auth:admin')->group(function () {
 
     // --- REPORTE SALIDA TALONARIO ---
     Route::post('/admin/reporte/talonario/salida', [ReportesController::class, 'pdfReporteSalidaTalonario']);
+    Route::post('/admin/reporte/talonario/salida/guardada', [ReportesController::class, 'pdfReporteSalidaGuardada']);
 
-
+    Route::post('/admin/jefefirma/actualizar',  [ConfiguracionController::class,'actualizarJefeFirmas']);
 
 
 

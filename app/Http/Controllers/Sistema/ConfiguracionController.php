@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Sistema;
 use App\Http\Controllers\Controller;
 use App\Models\Cuenta;
 use App\Models\Departamentos;
+use App\Models\InformacionGeneral;
 use App\Models\Materiales;
 use App\Models\ObjetoEspecifico;
 use App\Models\Rubro;
@@ -414,9 +415,20 @@ class ConfiguracionController extends Controller
     }
 
 
+    public function actualizarJefeFirmas(Request $request)
+    {
+        InformacionGeneral::where('id', 1)->update([
+            'nombre_firma_1' => $request->nombre_izq1,
+            'nombre_firma_2' => $request->nombre_izq2,
+            'nombre_firma_3'  => $request->nombre_der1,
+            'nombre_firma_4'   => $request->nombre_der2,
+            'encabezado'     => $request->encabezado,
+            'px_firmas'      => $request->px_firmas,
+            'salto_pagina'   => $request->boolean('salto_pagina'),
+        ]);
 
-
-
+        return ['success' => 1];
+    }
 
 
 }
