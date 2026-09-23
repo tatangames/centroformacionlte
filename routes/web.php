@@ -16,6 +16,8 @@ use App\Http\Controllers\Sistema\ReportesController;
 use App\Http\Controllers\Sistema\ReservasController;
 use App\Http\Controllers\Sistema\HistorialTransferenciaController;
 
+use App\Http\Controllers\Contrato\ConfigContratoController;
+use App\Http\Controllers\Contrato\RegistroContratoController;
 
 
 Route::get('/', [LoginController::class,'vistaLoginForm'])->name('login.admin');
@@ -61,6 +63,14 @@ Route::middleware('auth:admin')->group(function () {
     Route::post('/admin/unidadmedida/nuevo', [ConfiguracionController::class, 'nuevaUnidadMedida']);
     Route::post('/admin/unidadmedida/informacion', [ConfiguracionController::class, 'informacionUnidadMedida']);
     Route::post('/admin/unidadmedida/editar', [ConfiguracionController::class, 'editarUnidadMedida']);
+
+    // --- PROVEEDOR ---
+    Route::get('/admin/proveedor/index', [ConfiguracionController::class,'indexProveedor'])->name('admin.proveedor.index');
+    Route::get('/admin/proveedor/tabla/index', [ConfiguracionController::class,'tablaProveedor']);
+    Route::post('/admin/proveedor/nuevo', [ConfiguracionController::class, 'nuevaProveedor']);
+    Route::post('/admin/proveedor/informacion', [ConfiguracionController::class, 'informacionProveedor']);
+    Route::post('/admin/proveedor/editar', [ConfiguracionController::class, 'editarProveedor']);
+
 
     // --- DEPARTAMENTOS ---
     Route::get('/admin/departamentos/index', [ConfiguracionController::class,'indexDepartamentos'])->name('admin.departamentos.index');
@@ -264,6 +274,35 @@ Route::middleware('auth:admin')->group(function () {
 
     Route::post('/admin/jefefirma/actualizar',  [ConfiguracionController::class,'actualizarJefeFirmas']);
 
+
+
+
+
+    //****** MODULO DE PROCESOS / CONTRATO ********
+
+
+
+    // --- CONTRATO ---
+    Route::get('/admin/contrato/index', [ConfigContratoController::class,'indexContrato'])->name('admin.contrato.index');
+    Route::get('/admin/contrato/tabla/index', [ConfigContratoController::class,'tablaContrato']);
+    Route::post('/admin/contrato/nuevo', [ConfigContratoController::class, 'nuevaContrato']);
+    Route::post('/admin/contrato/informacion', [ConfigContratoController::class, 'informacionContrato']);
+    Route::post('/admin/contrato/editar', [ConfigContratoController::class, 'editarContrato']);
+
+    // --- CONTRATO DETALLE - LO QUE GANO EL CONTRATO ---
+    Route::get('/admin/contrato/detalle/{id}', [ConfigContratoController::class,'indexContratoDetalle'])->name('admin.contrato.detalle.index');
+    Route::get('/admin/contrato/detalle/tabla/{id}', [ConfigContratoController::class,'tablaContratoDetalle']);
+    Route::post('/admin/contrato/detalle/nuevo', [ConfigContratoController::class, 'nuevoContratoDetalle']);
+    Route::post('/admin/contrato/detalle/informacion', [ConfigContratoController::class, 'informacionContratoDetalle']);
+    Route::post('/admin/contrato/detalle/editar', [ConfigContratoController::class, 'editarContratoDetalle']);
+    Route::post('/admin/contrato/detalle/eliminar', [ConfigContratoController::class, 'eliminarContratoDetalle']);
+
+    // --- REGISTRO SALIDA CONTRATO ---
+    Route::get('/admin/contrato/registrosalida/index', [RegistroContratoController::class, 'indexSalidaContrato'])->name('admin.contrato.registrosalida.index');
+
+    Route::post('/admin/contrato/info', [RegistroContratoController::class, 'infoContrato'])->name('admin.contrato.info');
+    Route::post('/admin/contrato/buscar/material', [RegistroContratoController::class, 'buscarMaterialContrato'])->name('admin.contrato.buscar.material');
+    Route::post('/admin/contrato/retiro/guardar', [RegistroContratoController::class, 'guardarRetiro'])->name('admin.contrato.retiro.guardar');
 
 
 

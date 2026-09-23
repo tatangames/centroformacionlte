@@ -441,6 +441,34 @@ return [
                     'icon' => 'far fa-circle',
                     'route' => 'admin.departamentos.index',
                 ],
+
+                [
+                    'text' => 'Proveedores',
+                    'icon' => 'far fa-circle',
+                    'route' => 'admin.proveedor.index',
+                ],
+
+
+
+            ],
+        ],
+
+        [
+            'text'    => 'Procesos Contrato',
+            'icon'    => 'fas fa-pen-alt',
+            'can'     => 'sidebar.inventario',
+            'submenu' => [
+                [
+                    'text' => 'Registro de Contrato',
+                    'icon' => 'far fa-circle',
+                    'route' => 'admin.contrato.index',
+                ],
+
+                [
+                    'text' => 'Salidas',
+                    'icon' => 'far fa-circle',
+                    'route' => 'admin.contrato.registrosalida.index',
+                ],
             ],
         ],
 
