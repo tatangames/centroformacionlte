@@ -14,7 +14,7 @@
                             <table id="tabla" class="table table-bordered table-striped">
                                 <thead>
                                 <tr>
-                                    <th style="width: 5%">ID</th>
+                                    <th style="width: 8%">Código</th>
                                     <th style="width: 16%">Contrato</th>
                                     <th style="width: 12%">Proveedor</th>
                                     <th style="width: 8%">Fecha Registro</th>
@@ -22,14 +22,14 @@
                                     <th style="width: 9%">No. Factura</th>
                                     <th style="width: 15%">Descripción</th>
                                     <th style="width: 6%">Estado</th>
-                                    <th style="width: 21%">Opciones</th>
+                                    <th style="width: 18%">Opciones</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 @foreach($arrayRetiros as $dato)
                                     @php $cerrado = $dato->contrato && $dato->contrato->estado == 'finalizado'; @endphp
                                     <tr>
-                                        <td>{{ $dato->id }}</td>
+                                        <td>{{ $dato->contrato->codigo ?? '' }}</td>
                                         <td>{{ $dato->contrato->nombre_proceso ?? '' }}</td>
                                         <td>{{ $dato->contrato->proveedor->nombre ?? '' }}</td>
                                         <td data-order="{{ $dato->fecha }}">{{ $dato->fecha_fmt }}</td>
