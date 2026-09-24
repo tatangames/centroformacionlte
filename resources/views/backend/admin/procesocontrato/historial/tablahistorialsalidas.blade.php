@@ -15,12 +15,13 @@
                                 <thead>
                                 <tr>
                                     <th style="width: 5%">ID</th>
-                                    <th style="width: 18%">Contrato</th>
-                                    <th style="width: 14%">Proveedor</th>
-                                    <th style="width: 8%">Fecha</th>
-                                    <th style="width: 10%">No. Factura</th>
-                                    <th style="width: 17%">Descripción</th>
-                                    <th style="width: 7%">Estado</th>
+                                    <th style="width: 16%">Contrato</th>
+                                    <th style="width: 12%">Proveedor</th>
+                                    <th style="width: 8%">Fecha Registro</th>
+                                    <th style="width: 8%">Fecha Factura</th>
+                                    <th style="width: 9%">No. Factura</th>
+                                    <th style="width: 15%">Descripción</th>
+                                    <th style="width: 6%">Estado</th>
                                     <th style="width: 21%">Opciones</th>
                                 </tr>
                                 </thead>
@@ -31,7 +32,8 @@
                                         <td>{{ $dato->id }}</td>
                                         <td>{{ $dato->contrato->nombre_proceso ?? '' }}</td>
                                         <td>{{ $dato->contrato->proveedor->nombre ?? '' }}</td>
-                                        <td>{{ $dato->fecha_fmt }}</td>
+                                        <td data-order="{{ $dato->fecha }}">{{ $dato->fecha_fmt }}</td>
+                                        <td data-order="{{ $dato->fecha_factura ?? '' }}">{{ $dato->fecha_factura_fmt ?? '' }}</td>
                                         <td>{{ $dato->no_factura ?? '' }}</td>
                                         <td>{{ $dato->descripcion ?? '' }}</td>
                                         <td class="text-center">

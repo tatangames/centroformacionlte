@@ -65,11 +65,11 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label class="font-weight-bold">Fecha desde</label>
+                                <label class="font-weight-bold">Fecha Registro Desde</label>
                                 <input type="date" class="form-control" id="filtro-fecha-desde">
                             </div>
                             <div class="col-md-3">
-                                <label class="font-weight-bold">Fecha hasta</label>
+                                <label class="font-weight-bold">Fecha Registro Hasta</label>
                                 <input type="date" class="form-control" id="filtro-fecha-hasta">
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
@@ -315,6 +315,10 @@
                 responsive: true,
                 pagingType: "full_numbers",
                 lengthMenu: [[50, 100, -1], [50, 100, "Todo"]],
+                order: [[3, 'desc']], // ordena por defecto: Fecha Registro, descendente
+                columnDefs: [
+                    { orderable: false, targets: -1 } // última columna = Opciones
+                ],
                 language: {
                     sProcessing:   "Procesando...",
                     sLengthMenu:   "Mostrar _MENU_ registros",

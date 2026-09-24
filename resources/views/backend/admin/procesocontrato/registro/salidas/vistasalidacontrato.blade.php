@@ -55,8 +55,6 @@
 
         *:focus { outline: none; }
 
-
-
         .seccion-header {
             background: linear-gradient(135deg, #1a3a6b 0%, #2156af 100%);
             border-radius: 10px 10px 0 0;
@@ -240,8 +238,9 @@
                                 <tr>
                                     <th style="width:5%">#</th>
                                     <th style="width:35%">Material</th>
-                                    <th style="width:15%">Cantidad</th>
-                                    <th style="width:10%">Opciones</th>
+                                    <th style="width:20%">Unidad</th>
+                                    <th style="width:20%">Cantidad</th>
+                                    <th style="width:20%">Opciones</th>
                                 </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -277,7 +276,7 @@
                             <div class="card-body">
                                 <div class="form-group">
                                     <label class="field-label">
-                                        Material — Regresa: Nombre / Disponible
+                                        Material — Regresa: Nombre / Unidad / Disponible
                                         <span class="badge badge-success ml-1">Solo con inventario del mismo contrato</span>
                                     </label>
                                     <table class="table" id="matriz-busqueda">
@@ -330,11 +329,15 @@
                                         <input type="hidden" id="id-material-seleccionado">
 
                                         <div class="form-row mb-3">
-                                            <div class="col-md-6">
+                                            <div class="col-md-4">
                                                 <label class="field-label">Material</label>
                                                 <input type="text" disabled class="form-control" id="info-material">
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="col-md-4">
+                                                <label class="field-label">Unidad de Medida</label>
+                                                <input type="text" disabled class="form-control" id="info-unidad">
+                                            </div>
+                                            <div class="col-md-4">
                                                 <label class="field-label">Precio Unitario</label>
                                                 <input type="text" disabled class="form-control" id="info-medida">
                                             </div>
@@ -582,7 +585,7 @@
                             $.each(response.data, function (i, item) {
                                 html += '<a href="#" class="list-group-item list-group-item-action" ' +
                                     "onclick='modificarValor(" + JSON.stringify(item) + "); return false;'>" +
-                                    item.nombre + ' — Disponible: ' + item.disponible
+                                    item.nombre + ' (' + item.unidad + ') — Disponible: ' + item.disponible +
                                     '</a>';
                             });
                         }
@@ -598,14 +601,12 @@
         }
 
         // ── Seleccionar material → abrir modal cantidad ───────────────────
-        // ── Seleccionar material → abrir modal cantidad ───────────────────
         function modificarValor(item) {
             if (item.disponible <= 0) {
                 toastr.info('NO HAY DISPONIBILIDAD PARA ESTE MATERIAL');
                 return;
             }
 
-            // NUEVO: validar duplicado ANTES de abrir el modal de cantidad
             if ($("input[data-idcontratodetalle='" + item.id + "']").length > 0) {
                 toastr.error('Este material ya fue agregado al detalle');
                 $('.droplista').hide();
@@ -615,12 +616,13 @@
             $('#id-material-seleccionado').val(item.id);
             $('#info-material').val(item.nombre);
             $('#info-medida').val(item.precio);
+            $('#info-unidad').val(item.unidad);
 
             var markup = "<tr>" +
                 "<td><input disabled value='" + item.disponible + "' data-disponibleFila='" + item.disponible + "' class='form-control form-control-sm' type='text'></td>" +
                 "<td>" +
                 "<input class='form-control form-control-sm' id='input-cantidad-retiro' " +
-                "data-idcontratodetallefila='" + item.id + "' min='1' max='" + item.disponible + "' type='number' " +
+                "data-idcontratodetallefila='" + item.id + "' data-unidad='" + item.unidad + "' min='1' max='" + item.disponible + "' type='number' " +
                 "onkeydown=\"return validateInput(event);\" " +
                 "oninput=\"validateCantidadSalida(this, " + item.disponible + ");\">" +
                 "</td>" +
@@ -632,10 +634,11 @@
 
         // ── Agregar fila al detalle ────────────────────────────────────────
         function agregarAlDetalle() {
-            var idDetalle = $('#id-material-seleccionado').val();
-            var nombre    = $('#info-material').val();
-            var cantidad  = $('#input-cantidad-retiro').val();
-            var disponible = $('#input-cantidad-retiro').attr('max');
+            var idDetalle   = $('#id-material-seleccionado').val();
+            var nombre      = $('#info-material').val();
+            var unidad      = $('#info-unidad').val();
+            var cantidad    = $('#input-cantidad-retiro').val();
+            var disponible  = $('#input-cantidad-retiro').attr('max');
 
             if (cantidad === '' || cantidad === undefined) { toastr.error('Ingrese una cantidad'); return; }
             if (Number(cantidad) <= 0) { toastr.error('No se permite cero'); return; }
@@ -656,6 +659,7 @@
                 "<input name='idmaterialArray[]' type='hidden' data-idcontratodetalle='" + idDetalle + "'>" +
                 "<input disabled value='" + nombre + "' class='form-control form-control-sm' type='text'>" +
                 "</td>" +
+                "<td><input disabled value='" + unidad + "' class='form-control form-control-sm' type='text'></td>" +
                 "<td><input name='salidaArray[]' disabled data-cantidadSalida='" + cantidad + "' value='" + cantidad + "' class='form-control form-control-sm' type='text'></td>" +
                 "<td><button type='button' class='btn btn-danger btn-block btn-sm' onclick='borrarFila(this)'>Borrar</button></td>" +
                 "</tr>";

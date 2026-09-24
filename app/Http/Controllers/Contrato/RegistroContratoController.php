@@ -75,7 +75,8 @@ class RegistroContratoController extends Controller
     {
         $texto = $request->input('query');
 
-        $resultados = ContratoDetalle::where('id_contrato', $request->id_contrato)
+        $resultados = ContratoDetalle::with('unidadMedida')
+            ->where('id_contrato', $request->id_contrato)
             ->where('nombre', 'like', '%' . $texto . '%')
             ->withSum('retiros as retirado', 'cantidad')
             ->get()
@@ -84,6 +85,7 @@ class RegistroContratoController extends Controller
                 return [
                     'id'         => $item->id,
                     'nombre'     => $item->nombre,
+                    'unidad'     => $item->unidadMedida->nombre ?? '',
                     'disponible' => $item->cantidad - $retirado,
                     'precio'     => number_format($item->precio, 2),
                 ];
