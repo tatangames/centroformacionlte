@@ -33,4 +33,11 @@ class ContratoDetalle extends Model
     {
         return $this->belongsTo(UnidadMedida::class, 'id_unidadmedida');
     }
+
+    public function retiroDetalles()
+    {
+        return $this->hasMany(RetiroContratoDetalle::class, 'id_contrato_detalle');
+    }
+
+
 }

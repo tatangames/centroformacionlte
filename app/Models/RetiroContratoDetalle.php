@@ -17,4 +17,12 @@ class RetiroContratoDetalle extends Model
         return $this->belongsTo(ContratoDetalle::class, 'id_contrato_detalle');
     }
 
+
+    public function retiroContrato()
+    {
+        return $this->belongsTo(RetiroContrato::class, 'id_retiro_contrato');
+    }
+
+
+
 }

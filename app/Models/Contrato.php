@@ -27,6 +27,18 @@ class Contrato extends Model
     }
 
     // Contrato
-    public function detalle() { return $this->hasMany(ContratoDetalle::class, 'id_contrato'); }
-    public function retiros() { return $this->hasMany(RetiroContrato::class, 'id_contrato'); }
+    public function detalle() {
+
+        return $this->hasMany(ContratoDetalle::class, 'id_contrato');
+    }
+
+    public function retiros() {
+
+        return $this->hasMany(RetiroContrato::class, 'id_contrato');
+    }
+
+
+
+
+
 }

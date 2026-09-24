@@ -18,6 +18,8 @@ use App\Http\Controllers\Sistema\HistorialTransferenciaController;
 
 use App\Http\Controllers\Contrato\ConfigContratoController;
 use App\Http\Controllers\Contrato\RegistroContratoController;
+use App\Http\Controllers\Contrato\HistorialContratoController;
+use App\Http\Controllers\Contrato\ReportesContratoController;
 
 
 Route::get('/', [LoginController::class,'vistaLoginForm'])->name('login.admin');
@@ -299,17 +301,42 @@ Route::middleware('auth:admin')->group(function () {
 
     // --- REGISTRO SALIDA CONTRATO ---
     Route::get('/admin/contrato/registrosalida/index', [RegistroContratoController::class, 'indexSalidaContrato'])->name('admin.contrato.registrosalida.index');
-
     Route::post('/admin/contrato/info', [RegistroContratoController::class, 'infoContrato'])->name('admin.contrato.info');
     Route::post('/admin/contrato/buscar/material', [RegistroContratoController::class, 'buscarMaterialContrato'])->name('admin.contrato.buscar.material');
     Route::post('/admin/contrato/retiro/guardar', [RegistroContratoController::class, 'guardarRetiro'])->name('admin.contrato.retiro.guardar');
 
 
+    // --- HISTORIAL / SALIDAS DE CONTRATOS ---
+    Route::get('/admin/historial/contratos/salidas', [HistorialContratoController::class,'indexHistorialSalidas'])->name('admin.historial.contratos.index');
+    Route::get('/admin/historial/contratos/salidas/tabla', [HistorialContratoController::class,'tablaHistorialSalidas']);
+    Route::post('/admin/historial/contratos/salidas/informacion', [HistorialContratoController::class,'informacionSalida']);
+    Route::post('/admin/historial/contratos/salidas/editar', [HistorialContratoController::class,'editarSalida']);
+    Route::post('/admin/historial/contratos/salidas/eliminar', [HistorialContratoController::class,'eliminarSalida']);
+    Route::post('/admin/historial/contratos/salidas/detalle', [HistorialContratoController::class,'detalleSalida']);
+    Route::get('/admin/historial/contratos/salidas/extras/{id}', [HistorialContratoController::class,'vistaExtrasSalida'])->name('admin.historial.contratos.extras');
+    Route::post('/admin/historial/contratos/salidas/extras/guardar', [HistorialContratoController::class,'guardarExtrasSalida']);
+    Route::post('/admin/buscar/contrato-detalle/disponible', [HistorialContratoController::class,'buscarMaterialDisponible']);
+    Route::post('/admin/buscar/contrato-detalle/disponibilidad', [HistorialContratoController::class,'materialDisponibilidad']);
+    Route::post('/admin/historial/contratos/salidas/detalle/editar', [HistorialContratoController::class,'editarDetalleSalida']);
+    Route::post('/admin/historial/contratos/salidas/detalle/eliminar', [HistorialContratoController::class,'eliminarDetalleSalida']);
+    Route::post('/admin/historial/contratos/salidas/pdf', [HistorialContratoController::class, 'generarPDFSalidaContrato'])
+        ->name('admin.historial.contratos.salidas.pdf');
 
 
+    // --- REPORTES CONTRATO ---
 
+// --- REPORTES DE CONTRATOS ---
+    Route::get('/admin/reporte/contratos', [ReportesContratoController::class,'index'])
+        ->name('admin.reporte.contratos.index');
 
+    Route::post('/admin/reporte/contratos/saldos/pdf', [ReportesContratoController::class,'pdfSaldosContrato'])
+        ->name('admin.reporte.contratos.saldos.pdf');
 
+    Route::post('/admin/reporte/contratos/periodo/pdf', [ReportesContratoController::class,'pdfMovimientosContrato'])
+        ->name('admin.reporte.contratos.periodo.pdf');
+
+    Route::post('/admin/reporte/contratos/general/pdf', [ReportesContratoController::class,'pdfEstadoGeneralContratos'])
+        ->name('admin.reporte.contratos.general.pdf');
 
 }); // end auth
 

@@ -469,6 +469,18 @@ return [
                     'icon' => 'far fa-circle',
                     'route' => 'admin.contrato.registrosalida.index',
                 ],
+
+                [
+                    'text' => 'Historial Salidas',
+                    'icon' => 'far fa-circle',
+                    'route' => 'admin.historial.contratos.index',
+                ],
+
+                [
+                    'text' => 'Reportes Contrato',
+                    'icon' => 'far fa-circle',
+                    'route' => 'admin.reporte.contratos.index',
+                ],
             ],
         ],
 
