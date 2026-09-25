@@ -89,11 +89,76 @@ class ReportesContratoController extends Controller
 </tr>";
         }
 
-        // ── ENCABEZADO propio de este reporte ──
-        $tabla = $this->encabezadoSaldos('REPORTE DE SALDOS Y DISPONIBILIDAD DE CONTRATO');
+        $titulo = 'REPORTE DE SALDOS Y DISPONIBILIDAD DE CONTRATO';
+        $logoalcaldia = 'images/logo.png';
 
-        // ── Datos del contrato (código, fechas, estado, proveedor) ──
-        $tabla .= $this->bloqueDatosContrato($contrato);
+        $codigo      = $contrato->codigo ?? '—';
+        $fechaInicio = date('d-m-Y', strtotime($contrato->fecha_inicio));
+        $fechaFin    = date('d-m-Y', strtotime($contrato->fecha_fin));
+        $estado      = ucfirst($contrato->estado);
+        $proveedor   = $contrato->proveedor->nombre ?? '';
+
+        // ── ENCABEZADO + Datos del contrato, todo construido aquí mismo ──
+        $tabla = "
+<table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif;'>
+    <tr>
+        <td style='width:25%; border:0.8px solid #000; padding:6px 8px;'>
+            <table width='100%'>
+                <tr>
+                    <td style='width:30%; text-align:left;'>
+                        <img src='{$logoalcaldia}' style='height:38px'>
+                    </td>
+                    <td style='width:70%; text-align:left; color:#104e8c; font-size:13px; font-weight:bold; line-height:1.3;'>
+                        SANTA ANA NORTE<br>EL SALVADOR
+                    </td>
+                </tr>
+            </table>
+        </td>
+        <td style='width:50%; border-top:0.8px solid #000; border-bottom:0.8px solid #000; padding:6px 8px; text-align:center; font-size:15px; font-weight:bold;'>
+            {$titulo}
+        </td>
+        <td style='width:25%; border:0.8px solid #000; padding:0; vertical-align:top;'>
+            <table width='100%' style='font-size:10px;'>
+                <tr>
+                    <td width='40%' style='border-right:0.8px solid #000; border-bottom:0.8px solid #000; padding:4px 6px;'><strong>Código:</strong></td>
+                    <td width='60%' style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center;'></td>
+                </tr>
+                <tr>
+                    <td style='border-right:0.8px solid #000; border-bottom:0.8px solid #000; padding:4px 6px;'><strong>Versión:</strong></td>
+                    <td style='border-bottom:0.8px solid #000; padding:4px 6px; text-align:center;'></td>
+                </tr>
+                <tr>
+                    <td style='border-right:0.8px solid #000; padding:4px 6px;'><strong>Fecha de vigencia:</strong></td>
+                    <td style='padding:4px 6px; text-align:center;'></td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+    <tr>
+        <td colspan='3' style='padding:0;'>
+            <table width='100%' style='border-collapse:collapse; font-size:12px;'>
+                <tr>
+                    <td style='width:16%; border:0.8px solid #ccc; padding:6px 8px; font-weight:bold; background:#f5f5f5;'>CÓDIGO</td>
+                    <td style='width:34%; border:0.8px solid #ccc; padding:6px 8px;'>" . e($codigo) . "</td>
+                    <td style='width:15%; border:0.8px solid #ccc; padding:6px 8px; font-weight:bold; background:#f5f5f5;'>FECHA INICIO</td>
+                    <td style='width:35%; border:0.8px solid #ccc; padding:6px 8px;'>$fechaInicio</td>
+                </tr>
+                <tr>
+                    <td style='border:0.8px solid #ccc; padding:6px 8px; font-weight:bold; background:#f5f5f5;'>CONTRATO</td>
+                    <td style='border:0.8px solid #ccc; padding:6px 8px;'>" . e($contrato->nombre_proceso) . "</td>
+                    <td style='border:0.8px solid #ccc; padding:6px 8px; font-weight:bold; background:#f5f5f5;'>FECHA FIN</td>
+                    <td style='border:0.8px solid #ccc; padding:6px 8px;'>$fechaFin</td>
+                </tr>
+                <tr>
+                    <td style='border:0.8px solid #ccc; padding:6px 8px; font-weight:bold; background:#f5f5f5;'>ESTADO</td>
+                    <td style='border:0.8px solid #ccc; padding:6px 8px;'>" . e($estado) . "</td>
+                    <td style='border:0.8px solid #ccc; padding:6px 8px; font-weight:bold; background:#f5f5f5;'>PROVEEDOR</td>
+                    <td style='border:0.8px solid #ccc; padding:6px 8px;'>" . e($proveedor) . "</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table><br>";
 
         $tabla .= "
 <table width='100%' id='tablaFor' style='border-collapse:collapse;'>
@@ -105,7 +170,7 @@ class ReportesContratoController extends Controller
             <td style='font-weight:bold; width:12%; font-size:13px; text-align:center;'>Retirado</td>
             <td style='font-weight:bold; width:12%; font-size:13px; text-align:center;'>Disponible</td>
             <td style='font-weight:bold; width:12%; font-size:13px; text-align:right;'>Unit.</td>
-            <td style='font-weight:bold; width:14%; font-size:13px; text-align:right;'>Total.</td>
+            <td style='font-weight:bold; width:14%; font-size:13px; text-align:right;'>Total Disponible</td>
         </tr>
         $filasHtml
     </tbody>
@@ -120,6 +185,7 @@ class ReportesContratoController extends Controller
 
         return $this->salidaPdf($tabla, 'reporte_saldos_contrato_' . $contrato->id . '.pdf');
     }
+
 
     // Encabezado propio del reporte de Saldos
     private function encabezadoSaldos(string $titulo): string
@@ -450,7 +516,6 @@ class ReportesContratoController extends Controller
     private function encabezadoGeneral(string $titulo): string
     {
         $logoalcaldia = 'images/logo.png';
-        $fechaHoy = Carbon::now('America/El_Salvador')->format('d-m-Y');
 
         return "
 <table width='100%' style='border-collapse:collapse; font-family:Arial, sans-serif;'>
@@ -482,7 +547,7 @@ class ReportesContratoController extends Controller
                 </tr>
                 <tr>
                     <td style='border-right:0.8px solid #000; padding:4px 6px;'><strong>Fecha:</strong></td>
-                    <td style='padding:4px 6px; text-align:center;'>$fechaHoy</td>
+                    <td style='padding:4px 6px; text-align:center;'></td>
                 </tr>
             </table>
         </td>
