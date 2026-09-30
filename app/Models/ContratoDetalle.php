@@ -24,8 +24,8 @@ class ContratoDetalle extends Model
         return $this->belongsTo(Contrato::class, 'id_contrato');
     }
 
-    // ContratoDetalle
-    public function retiros() {
+    public function retiros()
+    {
         return $this->hasMany(RetiroContratoDetalle::class, 'id_contrato_detalle');
     }
 
@@ -39,5 +39,14 @@ class ContratoDetalle extends Model
         return $this->hasMany(RetiroContratoDetalle::class, 'id_contrato_detalle');
     }
 
+    public function departamentos()
+    {
+        return $this->belongsToMany(
+            Departamentos::class,
+            'contrato_detalle_departamento',
+            'id_contrato_detalle',
+            'id_departamento'
+        )->withPivot('cantidad');
+    }
 
 }

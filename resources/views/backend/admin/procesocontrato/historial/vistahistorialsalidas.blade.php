@@ -85,7 +85,7 @@
                         </div>
 
                         <div class="row align-items-end mt-3">
-                            <div class="col-md-6">
+                            <div class="col-md-5">
                                 <label class="font-weight-bold">
                                     <i class="fas fa-box mr-1 text-muted"></i> Buscar por ítem del contrato (nombre)
                                 </label>
@@ -94,9 +94,20 @@
                                        id="filtro-material"
                                        placeholder="Ej: cemento, servicio de transporte ...">
                             </div>
-                            <div class="col-md-6 d-flex align-items-end">
+                            <div class="col-md-4">
+                                <label class="font-weight-bold">
+                                    <i class="fas fa-building mr-1 text-muted"></i> Unidad de Origen
+                                </label>
+                                <select class="form-control" id="filtro-unidad">
+                                    <option value="">— Todas —</option>
+                                    @foreach($arrayDepartamentos as $dep)
+                                        <option value="{{ $dep->id }}">{{ $dep->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
                                 <small class="text-muted">
-                                    Filtra los retiros que contengan ese ítem en su detalle.
+                                    Filtra los retiros que tengan ese ítem o esa unidad de origen en su detalle.
                                 </small>
                             </div>
                         </div>
@@ -147,7 +158,7 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form id="formulario-editar">
+                    <form id="formulario-editar" onsubmit="return false;">
                         <input type="hidden" id="id-editar">
                         <div class="form-group">
                             <label>Fecha <span class="text-danger">*</span></label>
@@ -161,8 +172,33 @@
                             <label>Fecha Factura</label>
                             <input type="date" id="fecha-factura-editar" class="form-control">
                         </div>
+
+                        <div class="custom-control custom-checkbox mb-2">
+                            <input type="checkbox" class="custom-control-input" id="check-otra-editar"
+                                   onchange="toggleDestinoEditar()">
+                            <label class="custom-control-label" for="check-otra-editar" style="font-weight:600">
+                                Es para otra unidad
+                            </label>
+                        </div>
+
+                        <div class="form-group" id="contenedor-destino-editar" style="display:none">
+                            <label>Unidad Destino <span class="text-danger">*</span></label>
+                            <select id="destino-editar" class="form-control">
+                                <option value="">Seleccionar Unidad Destino</option>
+                                @foreach($arrayDepartamentos as $dep)
+                                    <option value="{{ $dep->id }}">{{ $dep->nombre }}</option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted">
+                                No se pueden elegir las unidades de origen de este retiro.
+                            </small>
+                        </div>
+
                         <div class="form-group">
-                            <label>Descripción</label>
+                            <label>
+                                Descripción
+                                <small id="texto-descripcion-editar" class="text-muted">(Opcional)</small>
+                            </label>
                             <textarea id="descripcion-editar" class="form-control"
                                       rows="3" maxlength="800"
                                       placeholder="Descripción opcional"></textarea>
@@ -181,7 +217,7 @@
 
     {{-- Modal Detalle Retiro --}}
     <div class="modal fade" id="modalDetalle" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content">
                 <div class="modal-header bg-info">
                     <h5 class="modal-title text-white">
@@ -202,19 +238,35 @@
                         <i class="fas fa-spinner fa-spin fa-2x"></i>
                     </div>
                     <div id="detalle-contenido" style="display:none;">
-                        <table class="table table-bordered table-striped table-sm">
-                            <thead class="thead-dark">
-                            <tr>
-                                <th>#</th>
-                                <th>Ítem</th>
-                                <th class="text-center">Unidad</th>
-                                <th class="text-center">Cantidad</th>
-                                <th class="text-right">Precio unitario</th>
-                                <th class="text-center" style="width:110px">Opciones</th>
-                            </tr>
-                            </thead>
-                            <tbody id="detalle-tbody"></tbody>
-                        </table>
+                        <div id="detalle-destino" class="alert alert-warning py-2 px-3 mb-3" style="display:none;">
+                            <i class="fas fa-share mr-1"></i>
+                            Retiro para otra unidad. <b>Destino:</b> <span id="detalle-destino-nombre"></span>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped table-sm">
+                                <thead class="thead-dark">
+                                <tr>
+                                    <th style="width:4%">#</th>
+                                    <th>Ítem</th>
+                                    <th class="text-center" style="width:8%">U/M</th>
+                                    <th class="text-center" style="width:18%">Unidad de Origen</th>
+                                    <th class="text-center" style="width:9%">Cantidad</th>
+                                    <th class="text-right" style="width:11%">Precio unitario</th>
+                                    <th class="text-right" style="width:11%">Subtotal</th>
+                                    <th class="text-center" style="width:110px">Opciones</th>
+                                </tr>
+                                </thead>
+                                <tbody id="detalle-tbody"></tbody>
+                                <tfoot>
+                                <tr>
+                                    <th colspan="6" class="text-right">Total</th>
+                                    <th class="text-right" id="detalle-total">$0.00</th>
+                                    <th></th>
+                                </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
                     <div id="detalle-vacio" class="text-center text-muted py-4" style="display:none;">
                         <i class="fas fa-inbox fa-2x mb-2"></i>
@@ -230,7 +282,7 @@
 
     {{-- Modal Editar Ítem del Detalle --}}
     <div class="modal fade" id="modalEditarItem" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-dialog modal-md" role="document">
             <div class="modal-content">
                 <div class="modal-header bg-warning">
                     <h5 class="modal-title text-white">
@@ -242,6 +294,10 @@
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="id-item-editar">
+
+                    <p class="mb-1"><b>Ítem:</b> <span id="item-editar-material"></span></p>
+                    <p class="mb-3"><b>Unidad de Origen:</b> <span id="item-editar-origen"></span></p>
+
                     <div class="form-group mb-0">
                         <label>Cantidad</label>
                         <input type="number" min="1" class="form-control" id="cantidad-item-editar"
@@ -269,8 +325,19 @@
     <script>
         const RUTA_TABLA = "{{ url('/admin/historial/contratos/salidas/tabla') }}";
 
-        window.idRetiroActual   = null;
-        window.detalleCerrado   = false;
+        window.idRetiroActual = null;
+        window.detalleCtx     = { contrato: '', fecha: '', cerrado: false };
+        window.origenesRetiro = [];
+
+        // ── Helper: escapar texto para insertarlo en HTML ──
+        function esc(texto) {
+            return String(texto === null || texto === undefined ? '' : texto)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         $(function () {
             $('#filtro-contrato').select2({
@@ -298,6 +365,13 @@
                             .text(cerrado ? 'Finalizado' : 'Vigente')
                         );
                 }
+            });
+
+            $('#filtro-unidad').select2({
+                theme: 'bootstrap-5',
+                placeholder: '— Todas —',
+                allowClear: true,
+                language: { noResults: function () { return 'No encontrado'; } }
             });
         });
 
@@ -347,12 +421,14 @@
             const fechaDesde = $('#filtro-fecha-desde').val();
             const fechaHasta = $('#filtro-fecha-hasta').val();
             const material   = $('#filtro-material').val().trim();
+            const unidad     = $('#filtro-unidad').val();
 
             const params = new URLSearchParams();
             if (contrato)   params.append('contrato',    contrato);
             if (fechaDesde) params.append('fecha_desde', fechaDesde);
             if (fechaHasta) params.append('fecha_hasta', fechaHasta);
             if (material)   params.append('material',    material);
+            if (unidad)     params.append('unidad',      unidad);
 
             const url = params.toString() ? RUTA_TABLA + '?' + params.toString() : RUTA_TABLA;
 
@@ -373,12 +449,29 @@
 
         function limpiarFiltros() {
             $('#filtro-contrato').val('').trigger('change');
+            $('#filtro-unidad').val('').trigger('change');
             $('#filtro-fecha-desde').val('');
             $('#filtro-fecha-hasta').val('');
             $('#filtro-material').val('');
             $('#div-instruccion').show();
             $('#div-tabla').hide();
             $('#badge-total').hide();
+        }
+
+        // ── Editar encabezado del retiro ──────────────────────────────────
+        function toggleDestinoEditar() {
+            const marcado = $('#check-otra-editar').is(':checked');
+
+            $('#contenedor-destino-editar').toggle(marcado);
+
+            if (marcado) {
+                $('#texto-descripcion-editar').text('(Requerida: indique el motivo)')
+                    .removeClass('text-muted').addClass('text-danger');
+            } else {
+                $('#destino-editar').val('');
+                $('#texto-descripcion-editar').text('(Opcional)')
+                    .removeClass('text-danger').addClass('text-muted');
+            }
         }
 
         function modalEditar(id) {
@@ -390,11 +483,28 @@
                     closeLoading();
                     if (response.data.success === 1) {
                         const r = response.data.retiro;
+
+                        window.origenesRetiro = (response.data.origenes || []).map(String);
+
                         $('#id-editar').val(r.id);
                         $('#fecha-editar').val(r.fecha ? r.fecha.substring(0, 10) : '');
                         $('#no-factura-editar').val(r.no_factura ?? '');
                         $('#fecha-factura-editar').val(r.fecha_factura ? r.fecha_factura.substring(0, 10) : '');
                         $('#descripcion-editar').val(r.descripcion ?? '');
+
+                        // Se bloquean como destino las unidades de origen de este retiro
+                        $('#destino-editar option').each(function () {
+                            const v = this.value;
+                            $(this).prop('disabled', v !== '' && window.origenesRetiro.indexOf(v) !== -1);
+                        });
+
+                        $('#check-otra-editar').prop('checked', Number(r.otra_unidad) === 1);
+                        toggleDestinoEditar();
+
+                        if (Number(r.otra_unidad) === 1 && r.id_departamento_destino) {
+                            $('#destino-editar').val(String(r.id_departamento_destino));
+                        }
+
                         $('#modalEditar').modal('show');
                     } else {
                         toastr.error('No se pudo cargar la información');
@@ -409,17 +519,36 @@
             const noFactura     = $('#no-factura-editar').val().trim();
             const fechaFactura  = $('#fecha-factura-editar').val().trim();
             const descripcion   = $('#descripcion-editar').val().trim();
+            const otraUnidad    = $('#check-otra-editar').is(':checked');
+            const destino       = $('#destino-editar').val();
 
             if (fecha === '')             { toastr.error('La fecha es requerida'); return; }
             if (descripcion.length > 800) { toastr.error('Descripción máximo 800 caracteres'); return; }
 
+            if (otraUnidad) {
+                if (!destino) {
+                    toastr.error('Seleccione la Unidad Destino');
+                    return;
+                }
+                if (window.origenesRetiro.indexOf(String(destino)) !== -1) {
+                    toastr.error('La Unidad Destino no puede ser igual a una Unidad de Origen de este retiro');
+                    return;
+                }
+                if (descripcion === '') {
+                    toastr.error('Indique en la descripción el motivo del retiro a otra unidad');
+                    return;
+                }
+            }
+
             openLoading();
             const formData = new FormData();
-            formData.append('id',             id);
-            formData.append('fecha',          fecha);
-            formData.append('no_factura',     noFactura);
-            formData.append('fecha_factura',  fechaFactura);
-            formData.append('descripcion',    descripcion);
+            formData.append('id',                      id);
+            formData.append('fecha',                   fecha);
+            formData.append('no_factura',              noFactura);
+            formData.append('fecha_factura',           fechaFactura);
+            formData.append('descripcion',             descripcion);
+            formData.append('otra_unidad',             otraUnidad ? 1 : 0);
+            formData.append('id_departamento_destino', otraUnidad ? destino : '');
 
             axios.post(urlAdmin + '/admin/historial/contratos/salidas/editar', formData)
                 .then((response) => {
@@ -432,12 +561,16 @@
                         Swal.fire({
                             title: 'Fecha inválida',
                             html:
-                                'La fecha de retiro (<b>' + response.data.fecha_salida + '</b>) ' +
-                                'es ' + response.data.motivo + ' (<b>' + response.data.fecha_limite + '</b>).',
+                                'La fecha de retiro (<b>' + esc(response.data.fecha_salida) + '</b>) ' +
+                                'es ' + esc(response.data.motivo) + ' (<b>' + esc(response.data.fecha_limite) + '</b>).',
                             icon: 'warning',
                             confirmButtonColor: '#d33',
                             confirmButtonText: 'Entendido'
                         });
+                    } else if (response.data.success === 3 || response.data.success === 4) {
+                        toastr.error(response.data.mensaje);
+                    } else if (response.data.success === 5) {
+                        toastr.error('Indique en la descripción el motivo del retiro a otra unidad');
                     } else {
                         toastr.error('Error al actualizar');
                     }
@@ -464,6 +597,8 @@
                             if (response.data.success === 1) {
                                 toastr.success('Retiro eliminado correctamente');
                                 buscarConFiltros();
+                            } else if (response.data.success === 3) {
+                                toastr.error(response.data.mensaje);
                             } else {
                                 toastr.error('Error al eliminar');
                             }
@@ -473,50 +608,78 @@
             });
         }
 
-        function verDetalle(id, contrato, fecha, cerrado) {
+        // ── Detalle del retiro ────────────────────────────────────────────
+        // Los datos del retiro vienen en atributos data- del botón
+        function verDetalle(id, btn) {
+            const $b = $(btn);
+            cargarDetalle(id, String($b.data('contrato') ?? ''), String($b.data('fecha') ?? ''), Number($b.data('cerrado')) === 1);
+        }
+
+        function cargarDetalle(id, contrato, fecha, cerrado) {
             window.idRetiroActual = id;
-            window.detalleCerrado = !!cerrado;
+            window.detalleCtx     = { contrato: contrato, fecha: fecha, cerrado: cerrado };
 
             $('#detalle-contrato').text(contrato);
             $('#detalle-fecha').text(fecha);
             $('#detalle-tbody').html('');
             $('#detalle-contenido').hide();
+            $('#detalle-destino').hide();
             $('#detalle-vacio').hide();
             $('#detalle-loading').show();
 
-            $('#detalle-badge-cerrado').toggle(!!cerrado);
+            $('#detalle-badge-cerrado').toggle(cerrado);
 
             $('#modalDetalle').modal('show');
 
             axios.post(urlAdmin + '/admin/historial/contratos/salidas/detalle', { id: id })
                 .then((response) => {
                     $('#detalle-loading').hide();
+
                     if (response.data.success === 1 && response.data.detalle.length > 0) {
                         let html = '';
+
                         response.data.detalle.forEach((fila, index) => {
-                            const botones = window.detalleCerrado
+                            const botones = cerrado
                                 ? '<span class="text-muted small">Contrato finalizado</span>'
                                 : `
                                     <button type="button" class="btn btn-warning btn-sm" title="Editar"
-                                            onclick="abrirEditarItem(${fila.id}, ${fila.cantidad_salida})">
+                                            data-id="${Number(fila.id)}"
+                                            data-cantidad="${Number(fila.cantidad_salida)}"
+                                            data-material="${esc(fila.material)}"
+                                            data-origen="${esc(fila.origen ?? '')}"
+                                            onclick="abrirEditarItem(this)">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button type="button" class="btn btn-danger btn-sm ml-1" title="Borrar"
-                                            onclick="borrarItemDetalle(${fila.id})">
+                                            onclick="borrarItemDetalle(${Number(fila.id)})">
                                         <i class="fas fa-trash"></i>
                                     </button>`;
+
+                            const origen = fila.origen
+                                ? esc(fila.origen)
+                                : '<span class="text-muted">Sin unidad</span>';
 
                             html += `
                                 <tr>
                                     <td>${index + 1}</td>
-                                    <td>${fila.material}</td>
-                                    <td class="text-center">${fila.unidad}</td>
-                                    <td class="text-center">${fila.cantidad_salida}</td>
-                                    <td class="text-right">$${fila.precio}</td>
+                                    <td>${esc(fila.material)}</td>
+                                    <td class="text-center">${esc(fila.unidad)}</td>
+                                    <td class="text-center">${origen}</td>
+                                    <td class="text-center">${esc(fila.cantidad_salida)}</td>
+                                    <td class="text-right">$${esc(fila.precio)}</td>
+                                    <td class="text-right">$${esc(fila.subtotal)}</td>
                                     <td class="text-center">${botones}</td>
                                 </tr>`;
                         });
+
                         $('#detalle-tbody').html(html);
+                        $('#detalle-total').text('$' + response.data.total);
+
+                        if (response.data.destino) {
+                            $('#detalle-destino-nombre').text(response.data.destino);
+                            $('#detalle-destino').show();
+                        }
+
                         $('#detalle-contenido').show();
                     } else {
                         $('#detalle-vacio').show();
@@ -531,11 +694,11 @@
 
         function recargarDetalleActual() {
             if (window.idRetiroActual) {
-                verDetalle(
+                cargarDetalle(
                     window.idRetiroActual,
-                    $('#detalle-contrato').text(),
-                    $('#detalle-fecha').text(),
-                    window.detalleCerrado
+                    window.detalleCtx.contrato,
+                    window.detalleCtx.fecha,
+                    window.detalleCtx.cerrado
                 );
             }
             buscarConFiltros();
@@ -548,9 +711,14 @@
             return true;
         }
 
-        function abrirEditarItem(idItem, cantidadActual) {
-            $('#id-item-editar').val(idItem);
-            $('#cantidad-item-editar').val(cantidadActual);
+        function abrirEditarItem(btn) {
+            const $b = $(btn);
+
+            $('#id-item-editar').val($b.data('id'));
+            $('#cantidad-item-editar').val($b.data('cantidad'));
+            $('#item-editar-material').text($b.data('material'));
+            $('#item-editar-origen').text($b.data('origen') || 'Sin unidad');
+
             $('#modalEditarItem').modal('show');
         }
 
@@ -558,7 +726,7 @@
             const idItem   = $('#id-item-editar').val();
             const cantidad = Number($('#cantidad-item-editar').val());
 
-            if (!idItem)               { toastr.error('Ítem inválido'); return; }
+            if (!idItem)                    { toastr.error('Ítem inválido'); return; }
             if (!cantidad || cantidad <= 0) { toastr.error('Ingresa una cantidad válida'); return; }
 
             openLoading();
@@ -573,8 +741,8 @@
                         $('#modalEditarItem').modal('hide');
                         recargarDetalleActual();
                     } else if (response.data.success === 2) {
-                        toastr.error('La cantidad supera lo disponible en el contrato (' + response.data.disponible + ')');
-                    } else if (response.data.success === 3) {
+                        toastr.error('La cantidad supera lo disponible para la unidad (' + response.data.disponible + ')');
+                    } else if (response.data.success === 3 || response.data.success === 4) {
                         toastr.error(response.data.mensaje);
                     } else {
                         toastr.error('Error al actualizar el ítem');

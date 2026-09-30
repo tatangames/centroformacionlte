@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * PROVEEDORES
+     * PROVEEDORES Y USADO EN CONTATOS O PROCESOS
      */
     public function up(): void
     {

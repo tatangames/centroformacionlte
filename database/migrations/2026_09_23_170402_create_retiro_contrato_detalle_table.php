@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * DETALLE DE RETIRO
+     * CONTATOS O PROCESOS
      */
     public function up(): void
     {
@@ -15,6 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('id_retiro_contrato')->constrained('retiro_contrato');
             $table->foreignId('id_contrato_detalle')->constrained('contrato_detalle');
+
+            // Unidad de la que sale este material (nullable por los retiros anteriores)
+            $table->foreignId('id_departamento')->nullable()->constrained('departamentos');
 
             $table->integer('cantidad');
         });

@@ -7,13 +7,16 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * CONTATOS O PROCESOS
      */
     public function up(): void
     {
         Schema::create('retiro_contrato', function (Blueprint $table) {
             $table->id();
             $table->foreignId('id_contrato')->constrained('contrato');
+
+            $table->boolean('otra_unidad')->default(false);
+            $table->foreignId('id_departamento_destino')->nullable()->constrained('departamentos');
 
             $table->date('fecha');
             $table->string('no_factura', 100)->nullable();

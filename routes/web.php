@@ -299,11 +299,18 @@ Route::middleware('auth:admin')->group(function () {
     Route::post('/admin/contrato/detalle/editar', [ConfigContratoController::class, 'editarContratoDetalle']);
     Route::post('/admin/contrato/detalle/eliminar', [ConfigContratoController::class, 'eliminarContratoDetalle']);
 
+    Route::get('/admin/contrato/detalle/completo/{id}', [ConfigContratoController::class, 'detalleCompletoContratoDetalle']);
+    Route::get('/admin/contrato/detalle/salidas/{id}', [ConfigContratoController::class, 'salidasContratoDetalle']);
+
+
+
     // --- REGISTRO SALIDA CONTRATO ---
     Route::get('/admin/contrato/registrosalida/index', [RegistroContratoController::class, 'indexSalidaContrato'])->name('admin.contrato.registrosalida.index');
     Route::post('/admin/contrato/info', [RegistroContratoController::class, 'infoContrato'])->name('admin.contrato.info');
     Route::post('/admin/contrato/buscar/material', [RegistroContratoController::class, 'buscarMaterialContrato'])->name('admin.contrato.buscar.material');
     Route::post('/admin/contrato/retiro/guardar', [RegistroContratoController::class, 'guardarRetiro'])->name('admin.contrato.retiro.guardar');
+    Route::post('/admin/contrato/unidades', [RegistroContratoController::class, 'unidadesContrato']);
+
 
 
     // --- HISTORIAL / SALIDAS DE CONTRATOS ---
@@ -337,6 +344,14 @@ Route::middleware('auth:admin')->group(function () {
 
     Route::post('/admin/reporte/contratos/general/pdf', [ReportesContratoController::class,'pdfEstadoGeneralContratos'])
         ->name('admin.reporte.contratos.general.pdf');
+
+
+    Route::post('/admin/reporte/contratos/unidades/pdf', [ReportesContratoController::class, 'pdfSolicitudUnidades']);
+
+
+
+
+
 
 }); // end auth
 

@@ -1,4 +1,4 @@
-{{-- resources/views/backend/reportes/reportecontratos.blade.php --}}
+{{-- resources/views/backend/admin/procesocontrato/reportes/vistareportescontrato.blade.php --}}
 @extends('adminlte::page')
 @section('title', 'Reportes de Contratos')
 @section('plugins.Sweetalert2', true)
@@ -86,15 +86,18 @@
         }
         .campo-condicional { display: none; }
         .campo-condicional.mostrar { display: block; }
+        .row.campo-condicional.mostrar { display: flex; }
     </style>
 
     {{-- Formulario oculto para POST (se reutiliza, cambiando la action según el tipo) --}}
     <form id="form-pdf" method="POST" target="_blank">
         @csrf
-        <input type="hidden" name="idcontrato"        id="h-idcontrato">
-        <input type="hidden" name="estado"             id="h-estado">
-        <input type="hidden" name="desde"              id="h-desde">
-        <input type="hidden" name="hasta"               id="h-hasta">
+        <input type="hidden" name="idcontrato"      id="h-idcontrato">
+        <input type="hidden" name="estado"          id="h-estado">
+        <input type="hidden" name="desde"           id="h-desde">
+        <input type="hidden" name="hasta"           id="h-hasta">
+        <input type="hidden" name="id_departamento" id="h-unidad">
+        <input type="hidden" name="detalle"         id="h-detalle">
     </form>
 
     <div id="divcontenedor">
@@ -121,24 +124,26 @@
                                         <div class="tipo-tab" data-tipo="periodo" id="tab-periodo">
                                             <i class="fas fa-exchange-alt"></i>Movimientos por Período
                                         </div>
+                                        <div class="tipo-tab" data-tipo="unidades" id="tab-unidades">
+                                            <i class="fas fa-building"></i>Solicitado por Unidad
+                                        </div>
                                         <div class="tipo-tab" data-tipo="general" id="tab-general">
                                             <i class="fas fa-th-list"></i>Estado General
                                         </div>
                                     </div>
                                     <span id="modo-hint" class="modo-hint">
                                         <i class="fas fa-info-circle mr-1"></i>
-                                        <span id="modo-hint-texto">
-                                            Muestra, por cada ítem de un contrato específico, lo contratado, lo retirado y lo disponible.
-                                        </span>
+                                        <span id="modo-hint-texto"></span>
                                     </span>
                                 </div>
 
                                 <hr class="divider">
 
-                                {{-- ── Contrato (saldos y periodo) ── --}}
+                                {{-- ── Contrato (saldos, periodo y unidades) ── --}}
                                 <div class="form-group campo-condicional mostrar" id="campo-contrato">
                                     <label class="field-label">
                                         <i class="fas fa-file-contract mr-1"></i>Contrato
+                                        <span id="contrato-opcional" class="text-muted" style="text-transform:none; font-weight:400; display:none">(Opcional: vacío = todos)</span>
                                     </label>
                                     <select class="form-control" id="sel-contrato">
                                         <option value="">— Selecciona un contrato —</option>
@@ -151,7 +156,20 @@
                                     </select>
                                 </div>
 
-                                {{-- ── Rango de fechas (solo periodo) ── --}}
+                                {{-- ── Unidad (saldos, periodo y unidades) ── --}}
+                                <div class="form-group campo-condicional mostrar" id="campo-unidad">
+                                    <label class="field-label">
+                                        <i class="fas fa-building mr-1"></i>Unidad de Origen
+                                    </label>
+                                    <select class="form-control" id="sel-unidad">
+                                        <option value="">— Todas las unidades —</option>
+                                        @foreach($departamentos as $d)
+                                            <option value="{{ $d->id }}">{{ $d->nombre }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- ── Rango de fechas (periodo y unidades) ── --}}
                                 <div class="row campo-condicional" id="campo-fechas">
                                     <div class="col-md-6">
                                         <div class="form-group">
@@ -169,6 +187,17 @@
                                             <input type="date" class="form-control" id="inp-hasta">
                                         </div>
                                     </div>
+                                </div>
+
+                                {{-- ── Tipo de detalle (solo unidades) ── --}}
+                                <div class="form-group campo-condicional" id="campo-detalle">
+                                    <label class="field-label">
+                                        <i class="fas fa-stream mr-1"></i>Nivel de Detalle
+                                    </label>
+                                    <select class="form-control" id="sel-detalle">
+                                        <option value="resumido">Resumido — total por ítem</option>
+                                        <option value="detallado">Detallado — línea por línea (fecha, factura, destino)</option>
+                                    </select>
                                 </div>
 
                                 {{-- ── Estado del contrato (solo general) ── --}}
@@ -210,13 +239,15 @@
         const RUTAS_PDF = {
             saldos:   "{{ url('admin/reporte/contratos/saldos/pdf') }}",
             periodo:  "{{ url('admin/reporte/contratos/periodo/pdf') }}",
+            unidades: "{{ url('admin/reporte/contratos/unidades/pdf') }}",
             general:  "{{ url('admin/reporte/contratos/general/pdf') }}",
         };
 
         const HINTS = {
-            saldos:  'Muestra, por cada ítem de un contrato específico, lo contratado, lo retirado y lo disponible.',
-            periodo: 'Las fechas que busca es por Fecha de Registro',
-            general: 'Muestra un listado de todos los contratos con su porcentaje de ejecución.',
+            saldos:   'Por cada ítem de un contrato: lo contratado, lo retirado y lo disponible, con el desglose por unidad.',
+            periodo:  'Los retiros de un contrato entre dos fechas (por Fecha de Registro), con unidad de origen y destino.',
+            unidades: 'Cuánto solicitó cada unidad entre dos fechas (por Fecha de Registro), agrupado por unidad de origen.',
+            general:  'Un listado de todos los contratos con su monto, ejecución, disponible y porcentaje de avance.',
         };
 
         function formatContrato(option) {
@@ -241,9 +272,16 @@
                 language: { noResults: function () { return "Búsqueda no encontrada"; } }
             });
 
+            $('#sel-unidad').select2({
+                theme: "bootstrap-5",
+                language: { noResults: function () { return "Búsqueda no encontrada"; } }
+            });
+
             $('.tipo-tab').on('click', function () {
                 cambiarTipo($(this).data('tipo'));
             });
+
+            cambiarTipo('saldos');
         });
 
         function cambiarTipo(tipo) {
@@ -252,9 +290,17 @@
             $('#tab-' + tipo).addClass('active');
             $('#modo-hint-texto').text(HINTS[tipo]);
 
-            $('#campo-contrato').toggleClass('mostrar', tipo === 'saldos' || tipo === 'periodo');
-            $('#campo-fechas').toggleClass('mostrar', tipo === 'periodo');
+            var conContrato = tipo === 'saldos' || tipo === 'periodo' || tipo === 'unidades';
+            var conFechas   = tipo === 'periodo' || tipo === 'unidades';
+
+            $('#campo-contrato').toggleClass('mostrar', conContrato);
+            $('#campo-unidad').toggleClass('mostrar', conContrato);
+            $('#campo-fechas').toggleClass('mostrar', conFechas);
+            $('#campo-detalle').toggleClass('mostrar', tipo === 'unidades');
             $('#campo-estado-general').toggleClass('mostrar', tipo === 'general');
+
+            // En "Solicitado por Unidad" el contrato es opcional
+            $('#contrato-opcional').toggle(tipo === 'unidades');
         }
 
         function generarPDF() {
@@ -262,11 +308,13 @@
             var desde      = $('#inp-desde').val();
             var hasta      = $('#inp-hasta').val();
             var estado     = $('#sel-estado-general').val();
+            var unidad     = $('#sel-unidad').val();
+            var detalle    = $('#sel-detalle').val();
 
             if ((tipoActual === 'saldos' || tipoActual === 'periodo') && !idcontrato) {
                 toastr.error('Seleccione un contrato'); return;
             }
-            if (tipoActual === 'periodo') {
+            if (tipoActual === 'periodo' || tipoActual === 'unidades') {
                 if (!desde) { toastr.error('Seleccione la fecha "Desde"'); return; }
                 if (!hasta) { toastr.error('Seleccione la fecha "Hasta"'); return; }
                 if (desde > hasta) { toastr.error('La fecha "Desde" no puede ser mayor que "Hasta"'); return; }
@@ -276,6 +324,8 @@
             $('#h-desde').val(desde || '');
             $('#h-hasta').val(hasta || '');
             $('#h-estado').val(estado || 'todos');
+            $('#h-unidad').val(unidad || '');
+            $('#h-detalle').val(detalle || 'resumido');
 
             $('#form-pdf').attr('action', RUTAS_PDF[tipoActual]);
             $('#form-pdf').submit();

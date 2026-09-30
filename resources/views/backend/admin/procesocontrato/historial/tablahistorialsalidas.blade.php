@@ -14,15 +14,17 @@
                             <table id="tabla" class="table table-bordered table-striped">
                                 <thead>
                                 <tr>
-                                    <th style="width: 8%">Código</th>
-                                    <th style="width: 16%">Contrato</th>
-                                    <th style="width: 12%">Proveedor</th>
-                                    <th style="width: 8%">Fecha Registro</th>
-                                    <th style="width: 8%">Fecha Factura</th>
-                                    <th style="width: 9%">No. Factura</th>
-                                    <th style="width: 15%">Descripción</th>
-                                    <th style="width: 6%">Estado</th>
-                                    <th style="width: 18%">Opciones</th>
+                                    <th style="width: 6%">Código</th>
+                                    <th style="width: 13%">Contrato</th>
+                                    <th style="width: 10%">Proveedor</th>
+                                    <th style="width: 7%">Fecha Registro</th>
+                                    <th style="width: 9%">Factura</th>
+                                    <th style="width: 12%">Unidad de Origen</th>
+                                    <th style="width: 9%">Destino</th>
+                                    <th style="width: 11%">Descripción</th>
+                                    <th style="width: 7%">Total</th>
+                                    <th style="width: 5%">Estado</th>
+                                    <th style="width: 11%">Opciones</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -33,9 +35,30 @@
                                         <td>{{ $dato->contrato->nombre_proceso ?? '' }}</td>
                                         <td>{{ $dato->contrato->proveedor->nombre ?? '' }}</td>
                                         <td data-order="{{ $dato->fecha }}">{{ $dato->fecha_fmt }}</td>
-                                        <td data-order="{{ $dato->fecha_factura ?? '' }}">{{ $dato->fecha_factura_fmt ?? '' }}</td>
-                                        <td>{{ $dato->no_factura ?? '' }}</td>
+                                        <td data-order="{{ $dato->fecha_factura ?? '' }}">
+                                            {{ $dato->no_factura ?? '' }}
+                                            @if($dato->fecha_factura_fmt)
+                                                <br><small class="text-muted">{{ $dato->fecha_factura_fmt }}</small>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @foreach($dato->origenes as $nombreOrigen)
+                                                <span class="badge badge-primary" style="font-size: 11px; margin: 1px 0">{{ $nombreOrigen }}</span>
+                                            @endforeach
+                                            @if($dato->sin_origen)
+                                                <span class="badge badge-secondary" style="font-size: 11px; margin: 1px 0">Sin unidad</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($dato->otra_unidad)
+                                                <span class="badge badge-warning" style="font-size: 11px">Otra unidad</span>
+                                                <br>{{ $dato->departamentoDestino->nombre ?? '' }}
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
                                         <td>{{ $dato->descripcion ?? '' }}</td>
+                                        <td class="text-right" data-order="{{ $dato->total_num }}">{{ $dato->total_fmt }}</td>
                                         <td class="text-center">
                                             @if($cerrado)
                                                 <span class="badge badge-danger">Finalizado</span>
@@ -63,7 +86,10 @@
                                             <button type="button"
                                                     style="margin: 3px"
                                                     class="btn btn-info btn-xs"
-                                                    onclick="verDetalle({{ $dato->id }}, '{{ addslashes($dato->contrato->nombre_proceso ?? '') }}', '{{ $dato->fecha_fmt }}', {{ $cerrado ? 1 : 0 }})">
+                                                    data-contrato="{{ $dato->contrato->nombre_proceso ?? '' }}"
+                                                    data-fecha="{{ $dato->fecha_fmt }}"
+                                                    data-cerrado="{{ $cerrado ? 1 : 0 }}"
+                                                    onclick="verDetalle({{ $dato->id }}, this)">
                                                 <i class="fas fa-list"></i> Detalle
                                             </button>
 

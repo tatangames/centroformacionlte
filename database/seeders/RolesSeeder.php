@@ -21,12 +21,15 @@ class RolesSeeder extends Seeder
         // Inventario
         $roleInventario = Role::create(['name' => 'inventario', 'guard_name' => 'admin']);
 
+        // Reportes
+        $roleReportes = Role::create(['name' => 'reportes', 'guard_name' => 'admin']);
+
 
         // solo para administrador
         Permission::create(['name' => 'sidebar.roles.y.permisos', 'description' => 'sidebar seccion roles y permisos'])->syncRoles($roleAdmin);
         Permission::create(['name' => 'sidebar.inventario', 'description' => 'contenedor de catalogo'])->syncRoles($roleInventario);
 
-
+        Permission::create(['name' => 'sidebar.reportes', 'description' => 'vista reportes'])->syncRoles($roleReportes);
 
 
 

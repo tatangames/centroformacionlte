@@ -59,7 +59,18 @@
                                         <label class="text-muted">Fecha</label>
                                         <p><strong>{{ date('d/m/Y', strtotime($retiro->fecha)) }}</strong></p>
                                     </div>
-                                    <div class="col-md-9">
+                                    <div class="col-md-3">
+                                        <label class="text-muted">Destino</label>
+                                        <p>
+                                            @if($retiro->otra_unidad)
+                                                <span class="badge badge-warning">Otra unidad</span>
+                                                <strong>{{ $retiro->departamentoDestino->nombre ?? '' }}</strong>
+                                            @else
+                                                <strong>-</strong>
+                                            @endif
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
                                         <label class="text-muted">Descripción</label>
                                         <p><strong>{{ $retiro->descripcion ?? '' }}</strong></p>
                                     </div>
@@ -96,13 +107,30 @@
                         </button>
                     </div>
                     <div class="modal-body">
+
                         <div class="form-group">
-                            <label>Ítem — Solo con disponibilidad</label>
+                            <label>Unidad de Origen <span class="text-danger">*</span></label>
+                            <select class="form-control" id="select-unidad-extra" onchange="cambioUnidad()">
+                                <option value="">Seleccionar Unidad de Origen</option>
+                                @foreach($arrayUnidades as $u)
+                                    <option value="{{ $u->id }}">{{ $u->nombre }}</option>
+                                @endforeach
+                            </select>
+                            @if($retiro->otra_unidad)
+                                <small class="text-muted">
+                                    No se muestra la unidad destino de este retiro.
+                                </small>
+                            @endif
+                        </div>
+
+                        <div class="form-group">
+                            <label>Ítem — Solo con disponibilidad en la unidad</label>
                             <input id="inputBuscador" autocomplete="off"
                                    class="form-control" style="width:100%"
                                    onkeyup="buscarMaterial(this)"
+                                   onfocus="buscarMaterial(this)"
                                    maxlength="300" type="text"
-                                   placeholder="Escribir nombre del ítem…">
+                                   placeholder="Escribir nombre del ítem o dejar vacío para ver todos…">
                         </div>
                         <div class="list-group" id="listaResultados" style="max-height:300px; overflow-y:auto;"></div>
 
@@ -114,7 +142,7 @@
                                     <input type="text" disabled class="form-control" id="info-item">
                                 </div>
                                 <div class="col-md-3">
-                                    <label>Disponible</label>
+                                    <label>Disponible en la unidad</label>
                                     <input type="text" disabled class="form-control" id="info-disponible">
                                 </div>
                                 <div class="col-md-3">
@@ -156,10 +184,11 @@
                                 <thead>
                                 <tr>
                                     <th style="width:5%">#</th>
-                                    <th style="width:40%">Ítem</th>
-                                    <th style="width:15%">Unidad</th>
-                                    <th style="width:20%">Cantidad</th>
-                                    <th style="width:20%">Opciones</th>
+                                    <th style="width:33%">Ítem</th>
+                                    <th style="width:12%">U/M</th>
+                                    <th style="width:20%">Unidad de Origen</th>
+                                    <th style="width:15%">Cantidad</th>
+                                    <th style="width:15%">Opciones</th>
                                 </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -188,10 +217,23 @@
     <script>
         const ID_RETIRO   = {{ $retiro->id }};
         const ID_CONTRATO = {{ $retiro->id_contrato ?? 'null' }};
-        window.seguroBuscador     = true;
-        window.disponibleActual   = 0;
-        window.unidadSeleccionada = '';
-        window.idsAgregados       = new Set(); // ítems ya agregados al detalle en esta sesión
+
+        window.disponibleActual    = 0;
+        window.unidadMedida        = '';
+        window.nombreItem          = '';
+        window.buscadorTimer       = null;
+        window.buscadorSeq         = 0;
+        window.clavesAgregadas     = new Set(); // "idItem-idUnidad" ya agregados en esta sesión
+
+        // ── Helper: escapar texto para insertarlo en HTML ──
+        function esc(texto) {
+            return String(texto === null || texto === undefined ? '' : texto)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         function abrirModal() {
             document.getElementById('inputBuscador').value = '';
@@ -213,33 +255,59 @@
             if (Number(input.value) > window.disponibleActual) input.value = window.disponibleActual;
         }
 
-        function buscarMaterial(e) {
-            if (seguroBuscador) {
-                seguroBuscador = false;
-                var texto = e.value;
-                axios.post(urlAdmin + '/admin/buscar/contrato-detalle/disponible', {
-                    query:       texto,
-                    id_contrato: ID_CONTRATO
-                })
-                    .then((response) => {
-                        seguroBuscador = true;
-                        renderResultados(response.data);
-                    })
-                    .catch(() => { seguroBuscador = true; toastr.error('Error al buscar'); });
+        // ── Al cambiar la unidad de origen se reinicia la búsqueda ──
+        function cambioUnidad() {
+            $('#formCantidad').hide();
+            $('#btnAgregar').hide();
+            $('#id-item-seleccionado').val('');
+            $('#listaResultados').empty();
+
+            if ($('#select-unidad-extra').val()) {
+                buscarMaterial(document.getElementById('inputBuscador'));
             }
         }
 
-        function renderResultados(items) {
+        // ── Buscar ítem (con espera de 250 ms entre teclas) ──
+        function buscarMaterial(e) {
+            clearTimeout(window.buscadorTimer);
+            window.buscadorTimer = setTimeout(function () { ejecutarBusqueda(e); }, 250);
+        }
+
+        function ejecutarBusqueda(e) {
+            const idUnidad = $('#select-unidad-extra').val();
+
+            if (!idUnidad) {
+                $('#listaResultados').html('<span class="text-muted p-2 d-block">Seleccione primero la unidad de origen</span>');
+                return;
+            }
+
+            const seq = ++window.buscadorSeq;
+
+            axios.post(urlAdmin + '/admin/buscar/contrato-detalle/disponible', {
+                query:           e.value,
+                id_contrato:     ID_CONTRATO,
+                id_departamento: idUnidad
+            })
+                .then((response) => {
+                    // Si ya hay una búsqueda más nueva, se ignora esta respuesta
+                    if (seq !== window.buscadorSeq) return;
+                    renderResultados(response.data, idUnidad);
+                })
+                .catch(() => { toastr.error('Error al buscar'); });
+        }
+
+        function renderResultados(items, idUnidad) {
             const $lista = $('#listaResultados');
             $lista.empty();
 
             if (!items || items.length === 0) {
-                $lista.html('<span class="text-muted p-2 d-block">Sin resultados con disponibilidad</span>');
+                $lista.html('<span class="text-muted p-2 d-block">Sin resultados con disponibilidad en esta unidad</span>');
                 return;
             }
 
             items.forEach(function (item) {
-                const yaAgregado = window.idsAgregados.has(String(item.id));
+                const clave      = String(item.id) + '-' + String(idUnidad);
+                const yaAgregado = window.clavesAgregadas.has(clave);
 
                 const $a = $('<a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"></a>')
                     .toggleClass('disabled text-muted', yaAgregado)
@@ -247,9 +315,7 @@
 
                 const $izquierda = $('<span></span>')
                     .append($('<span></span>').text(item.nombre))
-                    .append(
-                        $('<span class="badge badge-light ml-2"></span>').text(item.unidad || '—')
-                    );
+                    .append($('<span class="badge badge-light ml-2"></span>').text(item.unidad || '—'));
 
                 const $derecha = $('<span></span>')
                     .addClass(yaAgregado ? 'badge badge-secondary' : 'badge badge-info')
@@ -260,7 +326,7 @@
                 if (!yaAgregado) {
                     $a.on('click', function (ev) {
                         ev.preventDefault();
-                        seleccionarItem(item.id, item.nombre, item.unidad, item.disponible);
+                        seleccionarItem(item);
                     });
                 }
 
@@ -268,40 +334,47 @@
             });
         }
 
-        function seleccionarItem(id, nombre, unidad, disponible) {
-            $('#id-item-seleccionado').val(id);
-            $('#info-item').val(nombre + (unidad ? ' (' + unidad + ')' : ''));
-            $('#info-disponible').val(disponible);
-            $('#input-cantidad').val('').attr('max', disponible);
-            window.disponibleActual   = disponible;
-            window.unidadSeleccionada = unidad || '';
+        function seleccionarItem(item) {
+            $('#id-item-seleccionado').val(item.id);
+            $('#info-item').val(item.nombre + (item.unidad ? ' (' + item.unidad + ')' : ''));
+            $('#info-disponible').val(item.disponible);
+            $('#input-cantidad').val('').attr('max', item.disponible);
+
+            window.disponibleActual = Number(item.disponible);
+            window.unidadMedida     = item.unidad || '';
+            window.nombreItem       = item.nombre;
+
             $('#formCantidad').show();
             $('#btnAgregar').show();
+            $('#input-cantidad').trigger('focus');
         }
 
         function agregarAlDetalle() {
-            const id       = $('#id-item-seleccionado').val();
-            const nombre   = $('#info-item').val();
-            const unidad   = window.unidadSeleccionada;
-            const cantidad = Number($('#input-cantidad').val());
+            const id           = $('#id-item-seleccionado').val();
+            const idUnidad     = $('#select-unidad-extra').val();
+            const nombreUnidad = $('#select-unidad-extra option:selected').text();
+            const cantidad     = Number($('#input-cantidad').val());
+            const clave        = String(id) + '-' + String(idUnidad);
 
+            if (!idUnidad) { toastr.error('Seleccione la unidad de origen'); return; }
             if (!id) { toastr.error('Selecciona un ítem'); return; }
             if (!cantidad || cantidad <= 0) { toastr.error('Ingresa una cantidad válida'); return; }
             if (cantidad > window.disponibleActual) { toastr.error('Supera la cantidad disponible'); return; }
-            if (window.idsAgregados.has(String(id))) { toastr.error('Este ítem ya fue agregado al detalle'); return; }
+            if (window.clavesAgregadas.has(clave)) { toastr.error('Este ítem ya fue agregado para esta unidad'); return; }
 
-            window.idsAgregados.add(String(id));
+            window.clavesAgregadas.add(clave);
 
             var nFilas = $('#matriz > tbody > tr').length + 1;
             var markup = "<tr>" +
                 "<td><p id='fila" + nFilas + "' class='form-control' style='max-width:55px'>" + nFilas + "</p></td>" +
                 "<td>" +
-                "<input name='idItemArray[]' type='hidden' data-iditemarray='" + id + "'>" +
-                "<input disabled value='" + nombre + "' class='form-control form-control-sm' type='text'>" +
+                "<input name='idItemArray[]' type='hidden' data-iditemarray='" + Number(id) + "' data-idunidad='" + Number(idUnidad) + "' data-clave='" + clave + "'>" +
+                "<input disabled value='" + esc(window.nombreItem) + "' title='" + esc(window.nombreItem) + "' class='form-control form-control-sm' type='text'>" +
                 "</td>" +
-                "<td><input disabled value='" + (unidad || '—') + "' class='form-control form-control-sm' type='text'></td>" +
+                "<td><input disabled value='" + esc(window.unidadMedida || '—') + "' class='form-control form-control-sm' type='text'></td>" +
+                "<td><input disabled value='" + esc(nombreUnidad) + "' title='" + esc(nombreUnidad) + "' class='form-control form-control-sm' type='text'></td>" +
                 "<td><input name='cantidadArray[]' disabled data-cantidad='" + cantidad + "' value='" + cantidad + "' class='form-control form-control-sm' type='text'></td>" +
-                "<td><button type='button' class='btn btn-danger btn-sm btn-block' onclick='borrarFila(this, \"" + id + "\")'>Borrar</button></td>" +
+                "<td><button type='button' class='btn btn-danger btn-sm btn-block' onclick='borrarFila(this, \"" + clave + "\")'>Borrar</button></td>" +
                 "</tr>";
             $("#matriz tbody").append(markup);
 
@@ -330,12 +403,14 @@
 
         function guardarExtras() {
             var idItem    = $("input[name='idItemArray[]']").map(function () { return $(this).attr("data-iditemarray"); }).get();
+            var idUnidad  = $("input[name='idItemArray[]']").map(function () { return $(this).attr("data-idunidad"); }).get();
             var cantidad  = $("input[name='cantidadArray[]']").map(function () { return $(this).attr("data-cantidad"); }).get();
 
             const contenedorArray = [];
             for (var i = 0; i < cantidad.length; i++) {
                 contenedorArray.push({
                     infoIdContratoDetalle: idItem[i],
+                    infoIdDepartamento:    idUnidad[i],   // unidad de origen de esta línea
                     infoCantidad:          cantidad[i],
                 });
             }
@@ -358,11 +433,17 @@
                         }).then((r) => {
                             if (r.value) {
                                 $("#matriz tbody tr").remove();
-                                window.idsAgregados.clear();
+                                window.clavesAgregadas.clear();
                             }
                         });
                     } else if (response.data.success === 2) {
-                        toastr.error('Fila #' + response.data.fila + ': Supera unidades disponibles');
+                        toastr.error('Fila #' + response.data.fila + ': supera lo disponible en la unidad (' + response.data.disponible + ')');
+                    } else if (response.data.success === 3) {
+                        toastr.error(response.data.mensaje);
+                    } else if (response.data.success === 4) {
+                        toastr.error('Fila #' + response.data.fila + ': el ítem no está asignado a la unidad de origen o coincide con la unidad destino');
+                    } else if (response.data.success === 5) {
+                        toastr.error('Hay ítems repetidos para la misma unidad');
                     } else {
                         toastr.error('Error al guardar');
                     }
@@ -370,19 +451,16 @@
                 .catch(() => { closeLoading(); toastr.error('Error al guardar'); });
         }
 
-        function borrarFila(el, id) {
-            if (id) window.idsAgregados.delete(String(id));
+        function borrarFila(el, clave) {
+            if (clave) window.clavesAgregadas.delete(String(clave));
             el.closest('tr').remove();
             setearFila();
         }
 
         function setearFila() {
-            var table  = document.getElementById('matriz');
-            var conteo = 0;
-            for (var r = 1; r < table.rows.length; r++) {
-                conteo++;
-                table.rows[r].cells[0].children[0].innerHTML = conteo;
-            }
+            $('#matriz tbody tr').each(function (i) {
+                $(this).find('td:first p').text(i + 1);
+            });
         }
     </script>
 @endsection
